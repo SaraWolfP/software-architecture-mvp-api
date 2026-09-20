@@ -1,0 +1,27 @@
+# ── Ambiente virtual e artefatos do Python ───────────────────────────
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# ── Banco de dados local ─────────────────────────────────────────────
+# O esquema é recriado automaticamente na primeira execução.
+*.db
+*.db-wal
+*.db-shm
+dados/
+
+# ── Sistema operacional ──────────────────────────────────────────────
+.DS_Store
+._*
+.fuse_hidden*
+
+# ── Editores ─────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+
+# ── Material de trabalho que não faz parte da entrega ────────────────
+mvp-rules.txt
+*.log

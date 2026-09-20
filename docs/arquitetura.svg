@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 660" width="980" height="660" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <title>Arquitetura do sistema Amortiza ou Investe? — Cenário 1.1</title>
+
+  <defs>
+    <marker id="seta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#33415c"/>
+    </marker>
+    <marker id="seta-clara" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7a8aa0"/>
+    </marker>
+    <filter id="sombra" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0d1b2a" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <rect width="980" height="660" fill="#f4f7fb"/>
+
+  <!-- ══ Título ══ -->
+  <text x="40" y="44" font-size="22" font-weight="700" fill="#0d1b2a">Amortiza ou Investe? — Arquitetura</text>
+  <text x="40" y="68" font-size="13.5" fill="#6b7a90">Cenário 1.1 — Interface → API (Back-End) → API Externa · comunicação REST/JSON</text>
+
+  <!-- ══ Container 1: Front-end ══ -->
+  <rect x="40" y="100" width="330" height="190" rx="12" fill="#ffffff" stroke="#00b4d8" stroke-width="2.5" filter="url(#sombra)"/>
+  <rect x="40" y="100" width="330" height="34" rx="12" fill="#00b4d8"/>
+  <rect x="40" y="122" width="330" height="12" fill="#00b4d8"/>
+  <text x="60" y="123" font-size="11.5" font-weight="700" fill="#ffffff">DOCKER · simulador-front · nginx · :8080</text>
+
+  <text x="60" y="163" font-size="14.5" font-weight="700" fill="#0d1b2a">Interface (Front-End)</text>
+  <text x="60" y="185" font-size="12.5" fill="#33415c">HTML5 · CSS3 · JavaScript ES2021</text>
+  <text x="60" y="205" font-size="12.5" fill="#33415c">Bootstrap 5.3 · Chart.js 4.4 (locais, sem CDN)</text>
+
+  <line x1="60" y1="219" x2="350" y2="219" stroke="#e2e8f2" stroke-width="1"/>
+  <text x="60" y="239" font-size="11.5" fill="#6b7a90">api.js · grafico.js · indicadores.js</text>
+  <text x="60" y="257" font-size="11.5" fill="#6b7a90">financiamentos.js · amortizacoes.js · simulacoes.js</text>
+  <text x="60" y="277" font-size="11.5" fill="#6b7a90">nginx faz proxy de /api/ → api:5000</text>
+
+  <!-- ══ Container 2: Back-end ══ -->
+  <rect x="470" y="100" width="330" height="190" rx="12" fill="#ffffff" stroke="#7048e8" stroke-width="2.5" filter="url(#sombra)"/>
+  <rect x="470" y="100" width="330" height="34" rx="12" fill="#7048e8"/>
+  <rect x="470" y="122" width="330" height="12" fill="#7048e8"/>
+  <text x="490" y="123" font-size="11.5" font-weight="700" fill="#ffffff">DOCKER · simulador-api · python 3.11 · :5000</text>
+
+  <text x="490" y="163" font-size="14.5" font-weight="700" fill="#0d1b2a">API REST (Back-End)</text>
+  <text x="490" y="185" font-size="12.5" fill="#33415c">Python 3.11 · Flask 3.0 · Gunicorn</text>
+  <text x="490" y="205" font-size="12.5" fill="#33415c">Flasgger (Swagger em /apidocs) · 19 rotas</text>
+
+  <line x1="490" y1="219" x2="780" y2="219" stroke="#e2e8f2" stroke-width="1"/>
+  <text x="490" y="239" font-size="11.5" fill="#6b7a90">rotas/ financiamento · parcelas · amortizacoes</text>
+  <text x="490" y="257" font-size="11.5" fill="#6b7a90">rotas/ indicadores · simulacoes</text>
+  <text x="490" y="277" font-size="11.5" fill="#6b7a90">servicos/ calculadora · comparador · cliente_bcb</text>
+
+  <!-- ══ Seta Front → Back ══ -->
+  <line x1="374" y1="215" x2="464" y2="215" stroke="#33415c" stroke-width="2.5" marker-end="url(#seta)" marker-start="url(#seta)"/>
+  <rect x="352" y="312" width="136" height="44" rx="6" fill="#eef3fb" stroke="#c9d6e8" stroke-width="1"/>
+  <text x="420" y="330" font-size="11" font-weight="700" fill="#0d1b2a" text-anchor="middle">REST / JSON</text>
+  <text x="420" y="346" font-size="10" fill="#33415c" text-anchor="middle">GET · POST · PUT · DELETE</text>
+  <line x1="420" y1="224" x2="420" y2="308" stroke="#c9d6e8" stroke-width="1.5" stroke-dasharray="3 3"/>
+
+  <!-- ══ Banco de dados ══ -->
+  <g filter="url(#sombra)">
+    <ellipse cx="635" cy="360" rx="78" ry="17" fill="#ffffff" stroke="#7048e8" stroke-width="2"/>
+    <path d="M 557 360 L 557 418 A 78 17 0 0 0 713 418 L 713 360" fill="#ffffff" stroke="#7048e8" stroke-width="2"/>
+    <ellipse cx="635" cy="360" rx="78" ry="17" fill="#f6f2ff" stroke="#7048e8" stroke-width="2"/>
+  </g>
+  <text x="635" y="392" font-size="12.5" font-weight="700" fill="#0d1b2a" text-anchor="middle">SQLite 3</text>
+  <text x="635" y="410" font-size="10.5" fill="#6b7a90" text-anchor="middle">volume dados-api</text>
+
+  <line x1="635" y1="292" x2="635" y2="341" stroke="#33415c" stroke-width="2.5" marker-end="url(#seta)"/>
+
+  <text x="726" y="374" font-size="10.5" fill="#6b7a90">Financiamentos · Parcelas</text>
+  <text x="726" y="391" font-size="10.5" fill="#6b7a90">AmortizacoesExtras</text>
+  <text x="726" y="408" font-size="10.5" fill="#6b7a90">IndicadoresCache · Simulacoes</text>
+
+  <!-- ══ API externa ══ -->
+  <rect x="270" y="470" width="440" height="140" rx="12" fill="#fff8e8" stroke="#f9a825" stroke-width="2.5" stroke-dasharray="7 4" filter="url(#sombra)"/>
+  <rect x="270" y="470" width="440" height="34" rx="12" fill="#f9a825"/>
+  <rect x="270" y="492" width="440" height="12" fill="#f9a825"/>
+  <text x="490" y="493" font-size="12.5" font-weight="700" fill="#4a3000" text-anchor="middle">COMPONENTE EXTERNA · não implementada por nós</text>
+
+  <text x="490" y="533" font-size="14.5" font-weight="700" fill="#0d1b2a" text-anchor="middle">SGS — Banco Central do Brasil</text>
+  <text x="490" y="554" font-size="11.5" fill="#33415c" text-anchor="middle" font-family="Consolas, Menlo, monospace">api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo}/dados</text>
+  <text x="490" y="576" font-size="11.5" fill="#33415c" text-anchor="middle">Séries 4390 (CDI) · 4189 (Selic) · 433 (IPCA)</text>
+  <text x="490" y="596" font-size="11" fill="#6b7a90" text-anchor="middle">pública · gratuita · sem cadastro · sem chave de API</text>
+
+  <!-- ══ Seta Back → Externa ══ -->
+  <path d="M 635 425 L 635 448 Q 635 462 618 462 L 512 462 Q 495 462 495 476 L 495 466"
+        fill="none" stroke="#7a8aa0" stroke-width="2.5" marker-end="url(#seta-clara)"/>
+  <rect x="660" y="432" width="196" height="40" rx="6" fill="#fffaf0" stroke="#f0d9a8" stroke-width="1"/>
+  <text x="758" y="448" font-size="10.5" font-weight="700" fill="#4a3000" text-anchor="middle">GET · somente leitura</text>
+  <text x="758" y="463" font-size="10" fill="#6b7a90" text-anchor="middle">com cache local e fallback</text>
+
+  <!-- ══ Nota: o front não fala com o BCB ══ -->
+  <path d="M 120 296 L 120 588 L 264 588" fill="none" stroke="#d64550" stroke-width="2" stroke-dasharray="6 5"/>
+  <g transform="translate(120, 352)">
+    <circle r="15" fill="#fdeaec" stroke="#d64550" stroke-width="2"/>
+    <line x1="-7" y1="-7" x2="7" y2="7" stroke="#d64550" stroke-width="2.5"/>
+    <line x1="-7" y1="7" x2="7" y2="-7" stroke="#d64550" stroke-width="2.5"/>
+  </g>
+  <text x="146" y="349" font-size="11" font-weight="700" fill="#d64550">A interface nunca chama</text>
+  <text x="146" y="365" font-size="11" font-weight="700" fill="#d64550">o Banco Central direto.</text>
+  <text x="146" y="391" font-size="10.5" fill="#6b7a90">Quem busca, converte as unidades,</text>
+  <text x="146" y="406" font-size="10.5" fill="#6b7a90">guarda em cache e recalcula é a API.</text>
+  <text x="146" y="421" font-size="10.5" fill="#6b7a90">Os dados externos são tratados</text>
+  <text x="146" y="436" font-size="10.5" fill="#6b7a90">dentro da aplicação.</text>
+
+  <!-- ══ Legenda ══ -->
+  <rect x="750" y="500" width="196" height="96" rx="8" fill="#ffffff" stroke="#d6e0ee" stroke-width="1"/>
+  <text x="766" y="521" font-size="11" font-weight="700" fill="#0d1b2a">Legenda</text>
+  <line x1="766" y1="537" x2="796" y2="537" stroke="#33415c" stroke-width="2.5" marker-end="url(#seta)"/>
+  <text x="804" y="541" font-size="10" fill="#33415c">comunicação obrigatória</text>
+  <rect x="766" y="552" width="14" height="11" rx="2" fill="#ffffff" stroke="#00b4d8" stroke-width="2"/>
+  <text x="788" y="562" font-size="10" fill="#33415c">módulo implementado</text>
+  <rect x="766" y="572" width="14" height="11" rx="2" fill="#fff8e8" stroke="#f9a825" stroke-width="2" stroke-dasharray="3 2"/>
+  <text x="788" y="582" font-size="10" fill="#33415c">módulo externo consumido</text>
+</svg>

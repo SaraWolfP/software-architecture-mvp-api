@@ -1,0 +1,27 @@
+# Dependências locais — a imagem instala as suas a partir do requirements.txt.
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+
+# Banco de desenvolvimento: o container usa o volume em /app/dados.
+*.db
+*.db-wal
+*.db-shm
+dados/
+
+# Controle de versão e metadados do editor.
+.git/
+.gitignore
+.github/
+.vscode/
+.idea/
+
+# Ruído do sistema de arquivos.
+.DS_Store
+*.log
+
+# Testes e documentação não precisam ir para a imagem de execução.
+testes/
+docs/
+*.md
