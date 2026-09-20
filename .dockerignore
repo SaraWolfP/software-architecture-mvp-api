@@ -25,3 +25,6 @@ dados/
 testes/
 docs/
 *.md
+
+# A imagem de execução não precisa da suíte de testes.
+requirements-dev.txt

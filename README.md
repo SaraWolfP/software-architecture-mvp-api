@@ -44,7 +44,8 @@ Esta API ocupa a caixa do meio: recebe requisições da interface, persiste em S
 software-architecture-mvp-api/
 ├── app.py                        # Ponto de entrada: blueprints, Swagger, /health
 ├── banco_de_dados.py             # Conexão SQLite e operações genéricas
-├── requirements.txt
+├── requirements.txt              # Dependências de execução
+├── requirements-dev.txt          # Dependências de teste
 ├── Dockerfile
 ├── .dockerignore
 ├── rotas/
@@ -285,8 +286,10 @@ A API sobe em `http://127.0.0.1:5000` e o banco é criado automaticamente na pri
 
 ## Testes
 
+A suíte de testes vive em `requirements-dev.txt`, separada das dependências de execução — a imagem Docker não precisa carregar o pytest.
+
 ```bash
-pip install pytest
+pip install -r requirements-dev.txt
 python -m pytest testes/ -v
 ```
 
