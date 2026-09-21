@@ -1,0 +1,14 @@
+# Normaliza os finais de linha para LF no repositório, qualquer que seja o
+# sistema de quem clona. Sem isso, o git no Windows converte para CRLF no
+# checkout (core.autocrlf=true é o padrão de lá), e o shell script e os
+# arquivos de configuração chegam ao container com \r no fim de cada linha.
+* text=auto eol=lf
+
+# Scripts precisam de LF para o shebang funcionar dentro do container.
+*.sh text eol=lf
+
+# Binários não podem sofrer nenhuma conversão.
+*.png  binary
+*.woff binary
+*.woff2 binary
+*.pdf  binary
