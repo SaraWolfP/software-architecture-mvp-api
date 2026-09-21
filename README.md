@@ -34,7 +34,7 @@ Esta API ocupa a caixa do meio: recebe requisições da interface, persiste em S
 - [Flasgger](https://github.com/flasgger/flasgger) — documentação OpenAPI em `/apidocs`
 - [Requests](https://requests.readthedocs.io/) — cliente HTTP do Banco Central
 - [python-dateutil](https://dateutil.readthedocs.io/) — aritmética de competências
-- [pytest](https://docs.pytest.org/) — 77 testes automatizados
+- [pytest](https://docs.pytest.org/) — 79 testes automatizados
 
 ---
 
@@ -302,7 +302,7 @@ pip install -r requirements-dev.txt
 python -m pytest testes/ -v
 ```
 
-São 77 testes, organizados em três arquivos:
+São 79 testes, organizados em três arquivos:
 
 - **`test_calculadora.py`** — identidades contábeis dos cronogramas: a soma das amortizações fecha com o valor financiado, o saldo zera na última parcela, cada parcela é exatamente juros mais amortização.
 - **`test_comparador.py`** — regra financeira: faixas do IR por dias corridos, ausência de dupla contagem do principal, e existência de um único ponto de indiferença conforme a taxa sobe.
