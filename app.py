@@ -48,6 +48,35 @@ app.register_blueprint(simulacoes_bp)
 bd.inicializa_db()
 
 
+@app.route('/', methods=['GET'])
+def raiz():
+    """
+    Apresenta a API e aponta os caminhos úteis.
+    ---
+    tags:
+      - Infraestrutura
+    responses:
+      200:
+        description: |
+          Índice da API. Existe para que quem abrir a raiz no navegador —
+          esperando a interface, por exemplo — receba uma orientação em vez
+          de um 404 seco.
+    """
+    return jsonify({
+        'nome': CONFIG_SWAGGER['title'],
+        'versao': CONFIG_SWAGGER['version'],
+        'descricao': CONFIG_SWAGGER['description'],
+        'documentacao': '/apidocs',
+        'health': '/health',
+        'recursos': {
+            'financiamentos': '/financiamento/',
+            'indicadores': '/indicadores/',
+        },
+        'interface': 'A interface web roda em http://localhost:8080',
+        'componente_externa': 'SGS — Banco Central do Brasil (api.bcb.gov.br)',
+    }), 200
+
+
 @app.route('/health', methods=['GET'])
 def health():
     """

@@ -64,7 +64,7 @@ software-architecture-mvp-api/
 ├── testes/
 │   ├── test_calculadora.py       # Cronogramas SAC e PRICE
 │   ├── test_comparador.py        # Regra financeira e faixas de IR
-│   └── test_rotas.py             # Integração das 19 rotas
+│   └── test_rotas.py             # Integração das 20 rotas
 └── docs/
     └── arquitetura.png
 ```
@@ -183,12 +183,13 @@ Dois efeitos possíveis:
 
 | Método | Rota | Descrição |
 |---|---|---|
+| `GET` | `/` | Índice da API, com os caminhos úteis |
 | `GET` | `/health` | Liveness. Responde **200 sempre** |
 | `GET` | `/apidocs` | Documentação Swagger |
 
 > `/health` informa o estado do BCB no corpo (`{"bcb": "ok"\|"indisponivel"}`), **nunca** no código HTTP. Se o healthcheck do container dependesse da componente externa, uma instabilidade do Banco Central deixaria o container *unhealthy* e a interface sem subir — por um motivo alheio a esta aplicação.
 
-**Total: 19 rotas**, cobrindo `GET`, `POST`, `PUT` e `DELETE`.
+**Total: 20 rotas**, cobrindo `GET`, `POST`, `PUT` e `DELETE`.
 
 ---
 
@@ -306,7 +307,7 @@ São 79 testes, organizados em três arquivos:
 
 - **`test_calculadora.py`** — identidades contábeis dos cronogramas: a soma das amortizações fecha com o valor financiado, o saldo zera na última parcela, cada parcela é exatamente juros mais amortização.
 - **`test_comparador.py`** — regra financeira: faixas do IR por dias corridos, ausência de dupla contagem do principal, e existência de um único ponto de indiferença conforme a taxa sobe.
-- **`test_rotas.py`** — integração das 19 rotas contra um banco temporário, com a componente externa simulada para que a suíte não dependa da internet.
+- **`test_rotas.py`** — integração das 20 rotas contra um banco temporário, com a componente externa simulada para que a suíte não dependa da internet.
 
 Os testes da regra financeira não são cerimônia: é a única parte do sistema onde um erro sai plausível. Dois números grandes e um veredito convincente passam despercebidos mesmo quando a fórmula está errada.
 
