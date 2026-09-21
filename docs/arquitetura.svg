@@ -30,9 +30,9 @@
   <text x="60" y="205" font-size="12.5" fill="#33415c">Bootstrap 5.3 · Chart.js 4.4 (locais, sem CDN)</text>
 
   <line x1="60" y1="219" x2="350" y2="219" stroke="#e2e8f2" stroke-width="1"/>
-  <text x="60" y="239" font-size="11.5" fill="#6b7a90">api.js · grafico.js · indicadores.js</text>
-  <text x="60" y="257" font-size="11.5" fill="#6b7a90">financiamentos.js · amortizacoes.js · simulacoes.js</text>
-  <text x="60" y="277" font-size="11.5" fill="#6b7a90">nginx faz proxy de /api/ → api:5000</text>
+  <text x="60" y="239" font-size="11.5" fill="#6b7a90">api.js · competencia.js · grafico.js</text>
+  <text x="60" y="257" font-size="11.5" fill="#6b7a90">indicadores.js · financiamentos.js · amortizacoes.js</text>
+  <text x="60" y="277" font-size="11.5" fill="#6b7a90">simulacoes.js · app.js  ·  nginx: /api/ → api:5000</text>
 
   <!-- ══ Container 2: Back-end ══ -->
   <rect x="470" y="100" width="330" height="190" rx="12" fill="#ffffff" stroke="#7048e8" stroke-width="2.5" filter="url(#sombra)"/>
@@ -42,7 +42,7 @@
 
   <text x="490" y="163" font-size="14.5" font-weight="700" fill="#0d1b2a">API REST (Back-End)</text>
   <text x="490" y="185" font-size="12.5" fill="#33415c">Python 3.11 · Flask 3.0 · Gunicorn</text>
-  <text x="490" y="205" font-size="12.5" fill="#33415c">Flasgger (Swagger em /apidocs) · 19 rotas</text>
+  <text x="490" y="205" font-size="12.5" fill="#33415c">Flasgger (Swagger em /apidocs) · 20 rotas</text>
 
   <line x1="490" y1="219" x2="780" y2="219" stroke="#e2e8f2" stroke-width="1"/>
   <text x="490" y="239" font-size="11.5" fill="#6b7a90">rotas/ financiamento · parcelas · amortizacoes</text>

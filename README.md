@@ -110,7 +110,7 @@ UNIQUE(codigo_serie, data_ref)        montante_amortizar · montante_investir
 
 ## Rotas
 
-Base: `http://localhost:5000` · Documentação interativa: `/apidocs`
+Base: `http://localhost:5000` (via Compose, publicada no host em `5001`) · Documentação interativa: `/apidocs`
 
 ### Financiamentos
 
@@ -185,11 +185,11 @@ Dois efeitos possíveis:
 |---|---|---|
 | `GET` | `/` | Índice da API, com os caminhos úteis |
 | `GET` | `/health` | Liveness. Responde **200 sempre** |
-| `GET` | `/apidocs` | Documentação Swagger |
+| `GET` | `/apidocs` | Documentação Swagger (servida pelo Flasgger) |
 
 > `/health` informa o estado do BCB no corpo (`{"bcb": "ok"\|"indisponivel"}`), **nunca** no código HTTP. Se o healthcheck do container dependesse da componente externa, uma instabilidade do Banco Central deixaria o container *unhealthy* e a interface sem subir — por um motivo alheio a esta aplicação.
 
-**Total: 20 rotas**, cobrindo `GET`, `POST`, `PUT` e `DELETE`.
+**Total: 20 rotas próprias**, cobrindo `GET`, `POST`, `PUT` e `DELETE` — mais a documentação em `/apidocs`, que o Flasgger registra por conta própria.
 
 ---
 
@@ -249,16 +249,18 @@ git clone https://github.com/SaraWolfP/software-architecture-mvp-api.git
 cd software-architecture-mvp-api
 
 docker build -t simulador-api .
-docker run --rm -p 5000:5000 -v dados-api:/app/dados simulador-api
+docker run --rm -p 5001:5000 -v dados-api:/app/dados simulador-api
 ```
 
-Acesse a documentação em http://localhost:5000/apidocs
+Acesse a documentação em http://localhost:5001/apidocs
+
+> A porta do host é 5001 porque o AirPlay Receiver do macOS ocupa a 5000 por padrão. Dentro do container a API continua na 5000.
 
 > Para subir **API + interface juntas**, use o `docker compose up` do repositório da interface — é lá que fica o arquivo de composição.
 
 ### Opção 2 — Ambiente local
 
-**Pré-requisito:** Python 3.9 ou superior.
+**Pré-requisito:** Python 3.10 ou superior — o código usa a sintaxe de união de tipos `X | None` (PEP 604), que só existe a partir do 3.10.
 
 ```bash
 # 1. Clone o repositório
