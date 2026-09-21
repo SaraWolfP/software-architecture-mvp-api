@@ -351,6 +351,7 @@ def test_get_indicadores_traz_as_tres_series(cliente):
 
     assert nomes == {'CDI', 'SELIC', 'IPCA'}
     assert corpo['origem'] in ('bcb', 'cache', 'misto')
+    assert corpo['origem'] != 'cache_vencido'
 
 
 def test_get_indicadores_normaliza_a_selic_para_base_mensal(cliente):
@@ -475,3 +476,38 @@ def test_editar_o_contrato_marca_as_simulacoes_como_obsoletas(cliente, id_financ
     simulacoes = cliente.get(f'/financiamento/{id_financiamento}/simulacoes').get_json()
 
     assert all(s['obsoleta'] == 1 for s in simulacoes)
+
+
+def test_cache_dentro_do_ttl_nao_e_reportado_como_falha(cliente):
+    """
+    Servir do cache dentro do TTL é o funcionamento normal, não uma degradação.
+
+    Se essa distinção se perder, a interface passa a exibir "o Banco Central
+    não respondeu" em toda carga de página depois da primeira — um alarme
+    falso, já que o dado veio do BCB e só não foi relido.
+    """
+    cliente.post('/indicadores/atualizar')
+
+    corpo = cliente.get('/indicadores/').get_json()
+
+    assert corpo['origem'] in ('bcb', 'cache', 'misto')
+    assert corpo['origem'] != 'cache_vencido'
+
+
+def test_bcb_fora_do_ar_marca_o_cache_como_vencido(cliente, monkeypatch):
+    """Com o BCB inacessível e o TTL expirado, a resposta precisa se declarar degradada."""
+    from servicos import cache_indicadores, cliente_bcb
+
+    cliente.post('/indicadores/atualizar')  # garante algo no cache
+
+    def falha(*_args, **_kwargs):
+        raise cliente_bcb.ErroBCB('simulando BCB fora do ar')
+
+    monkeypatch.setattr('servicos.cache_indicadores.busca_indicador', falha)
+    monkeypatch.setattr(cache_indicadores, 'CACHE_TTL_HORAS', 0)
+
+    corpo = cliente.get('/indicadores/').get_json()
+
+    assert corpo['origem'] == 'cache_vencido'
+    # Mesmo degradada, a resposta continua útil: os valores seguem lá.
+    assert all(i.get('valor') is not None for i in corpo['indicadores'])

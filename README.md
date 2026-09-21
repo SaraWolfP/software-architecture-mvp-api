@@ -226,7 +226,16 @@ E normaliza as unidades. A Selic vem anualizada; o CDI e o IPCA, mensais:
 taxa_mensal = (1 + taxa_anual) ** (1/12) - 1   # 15% a.a. → 1,1715% a.m.
 ```
 
-O módulo `servicos/cache_indicadores.py` guarda as séries no SQLite com TTL configurável. A ordem de tentativa é: cache fresco → BCB → cache vencido. Toda resposta carrega o campo `origem`, para que a interface possa avisar quando o dado não é o mais recente.
+O módulo `servicos/cache_indicadores.py` guarda as séries no SQLite com TTL configurável. A ordem de tentativa é: cache fresco → BCB → cache vencido. Toda resposta carrega o campo `origem`:
+
+| `origem` | Significado | A interface alerta? |
+|---|---|---|
+| `bcb` | Lido agora do Banco Central | não |
+| `cache` | Servido do cache, dentro do TTL | não |
+| `misto` | Parte lida agora, parte do cache válido | não |
+| `cache_vencido` | O BCB não respondeu; valor guardado pode estar velho | **sim** |
+
+A distinção entre `cache` e `cache_vencido` importa: servir do cache dentro do TTL é o funcionamento normal e não deve alarmar ninguém. Tratar os dois como a mesma coisa faria a interface anunciar uma falha em toda carga de página depois da primeira.
 
 ---
 

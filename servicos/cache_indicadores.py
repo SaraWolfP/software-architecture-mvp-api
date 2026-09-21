@@ -127,7 +127,13 @@ def obtem_indicador(conn, nome: str, forcar: bool = False, ultimos: int = 12) ->
     Ordem de tentativa:
         1. Cache fresco (dentro do TTL), a menos que `forcar` seja True.
         2. API do Banco Central — grava o resultado no cache.
-        3. Cache vencido, marcado com origem 'cache'.
+        3. Cache vencido, marcado com origem 'cache_vencido'.
+
+    A distinção entre 'cache' e 'cache_vencido' não é cosmética: servir um
+    valor do cache dentro do TTL é o funcionamento normal e esperado, e não
+    deve alarmar ninguém. Já servir um valor vencido significa que o Banco
+    Central não respondeu, e aí sim o usuário precisa saber que o número na
+    tela pode estar desatualizado.
 
     Argumentos:
         conn: conexão ativa com o banco de dados.
@@ -151,6 +157,7 @@ def obtem_indicador(conn, nome: str, forcar: bool = False, ultimos: int = 12) ->
     except ErroBCB:
         cacheado = le_do_cache(conn, nome)
         if cacheado:
+            cacheado['origem'] = 'cache_vencido'
             return cacheado
         raise
 
@@ -173,7 +180,13 @@ def obtem_todos(conn, forcar: bool = False, ultimos: int = 12) -> dict:
         ultimos: quantas observações trazer em cada histórico.
 
     Retorna:
-        Dicionário {'indicadores': [...], 'origem': 'bcb'|'cache'|'misto'}.
+        Dicionário {'indicadores': [...], 'origem': ...}, em que origem é:
+            'bcb'           todas as séries lidas agora do Banco Central
+            'cache'         todas servidas do cache dentro do TTL
+            'misto'         mistura das duas situações acima
+            'cache_vencido' ao menos uma série veio de cache vencido, porque
+                            o Banco Central não respondeu — é o único caso em
+                            que a interface deve alertar o usuário
     """
     resultados = []
     origens = set()
@@ -187,7 +200,11 @@ def obtem_todos(conn, forcar: bool = False, ultimos: int = 12) -> dict:
             origens.add('indisponivel')
         resultados.append(indicador)
 
-    if len(origens) == 1:
+    # Degradação manda na classificação: basta uma série vencida ou ausente
+    # para que a resposta inteira mereça o alerta.
+    if origens & {'cache_vencido', 'indisponivel'}:
+        origem = 'cache_vencido'
+    elif len(origens) == 1:
         origem = origens.pop()
     else:
         origem = 'misto'
