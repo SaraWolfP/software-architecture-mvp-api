@@ -12,6 +12,7 @@
 #   ./scripts/demo_rotas.sh                 # API em http://localhost:5001
 #   BASE=http://localhost:5000 ./scripts/demo_rotas.sh
 #   PAUSA=2 ./scripts/demo_rotas.sh         # pausa de 2 s entre os grupos
+#   CURL=1 ./scripts/demo_rotas.sh          # mostra o comando curl de cada requisição
 #
 # Requer curl e python3 (para formatar o JSON).
 #
@@ -19,6 +20,7 @@ set -u
 
 BASE="${BASE:-http://localhost:5001}"
 PAUSA="${PAUSA:-0}"
+MOSTRAR_CURL="${CURL:-0}"
 
 # ── Cores, só quando a saída é um terminal ─────────────────────────────────
 if [ -t 1 ]; then
@@ -99,6 +101,17 @@ except Exception:
     "$rota" \
     "$(cor_status "$status")" "$status" "$FIM" \
     "$CINZA" "$texto" "$FIM"
+
+  # Com CURL=1, mostra o comando exato que foi enviado, pronto para copiar.
+  # A URL vai entre aspas simples: sem elas, o zsh tenta expandir o '?' das
+  # query strings como curinga de arquivo e o comando falha.
+  if [ "$MOSTRAR_CURL" = "1" ]; then
+    local comando="curl -X $metodo '$BASE$rota'"
+    if [ -n "$corpo" ]; then
+      comando="$comando -H 'Content-Type: application/json' -d '$corpo'"
+    fi
+    printf '        %s$ %s%s\n' "$CINZA" "$comando" "$FIM"
+  fi
 
   # devolve o corpo para quem precisar extrair um id
   ULTIMO_CORPO="$body"

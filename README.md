@@ -347,9 +347,10 @@ Com a API no ar, o script percorre todas as rotas em sequência, cria um contrat
 ./scripts/demo_rotas.sh                      # API em http://localhost:5001
 BASE=http://localhost:5000 ./scripts/demo_rotas.sh
 PAUSA=1 ./scripts/demo_rotas.sh              # pausa entre os grupos, para narrar
+CURL=1 ./scripts/demo_rotas.sh               # mostra o comando curl de cada requisição
 ```
 
-Cada linha traz o método, a rota, o código HTTP e um resumo da resposta. Leva pouco mais de um segundo.
+Cada linha traz o método, a rota, o código HTTP e um resumo da resposta. Com `CURL=1`, aparece também o comando `curl` completo de cada requisição, pronto para copiar e rodar à parte. Leva pouco mais de um segundo.
 
 ---
 
