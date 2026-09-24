@@ -120,8 +120,11 @@ def atualizar_indicadores():
     finally:
         conn.close()
 
-    atualizados = [i['nome'] for i in resultado['indicadores'] if 'erro' not in i]
-    falhas = [i['nome'] for i in resultado['indicadores'] if 'erro' in i]
+    # Só conta como atualizado o que veio de fato do BCB nesta chamada. Uma
+    # série servida do cache vencido é uma falha para esta rota, cujo único
+    # propósito é reler a fonte — reportá-la como sucesso seria mentir.
+    atualizados = [i['nome'] for i in resultado['indicadores'] if i.get('origem') == 'bcb']
+    falhas = [i['nome'] for i in resultado['indicadores'] if i.get('origem') != 'bcb']
 
     if not atualizados:
         return jsonify({

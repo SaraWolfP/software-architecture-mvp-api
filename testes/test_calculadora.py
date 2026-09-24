@@ -209,3 +209,44 @@ def test_modelo_desconhecido_e_rejeitado():
 def test_meses_entre(inicio, fim, esperado):
     """A contagem de meses precisa atravessar a virada de ano corretamente."""
     assert meses_entre(inicio, fim) == esperado
+
+
+@pytest.mark.parametrize('modelo', ['SAC', 'PRICE'])
+def test_parcela_depois_de_prazo_respeita_o_prazo_encurtado(modelo):
+    """
+    Uma amortização PARCELA lançada depois de uma PRAZO não pode desfazer o
+    encurtamento que a PRAZO produziu.
+
+    O erro era re-espalhar o saldo pelo prazo *original*: o contrato voltava
+    a terminar no mês 360, como se a PRAZO nunca tivesse existido. O correto
+    é redistribuir sobre o prazo já encurtado.
+    """
+    calculadora = criar_calculadora(modelo)
+
+    so_prazo = calculadora.reconstruir_parcelas(
+        contrato(modelo), [AmortizacaoExtra(50_000, '2027-01', 'PRAZO')]
+    )
+    prazo_depois_parcela = calculadora.reconstruir_parcelas(
+        contrato(modelo), [
+            AmortizacaoExtra(50_000, '2027-01', 'PRAZO'),
+            AmortizacaoExtra(20_000, '2028-01', 'PARCELA'),
+        ]
+    )
+
+    # A PARCELA mantém o prazo vigente — que já é o encurtado — e não o original.
+    assert len(prazo_depois_parcela) == len(so_prazo)
+    assert len(prazo_depois_parcela) < PRAZO
+    assert prazo_depois_parcela[-1].saldo_devedor == 0
+
+
+def test_prazo_sozinho_continua_com_o_mesmo_numero_de_parcelas():
+    """A estimativa do prazo efetivo não pode alterar o resultado da PRAZO isolada."""
+    calculadora = criar_calculadora('SAC')
+    com_aporte = calculadora.reconstruir_parcelas(
+        contrato(), [AmortizacaoExtra(50_000, '2027-01', 'PRAZO')]
+    )
+
+    amortizacao_mensal = FINANCIADO / PRAZO
+    parcelas_eliminadas = round(50_000 / amortizacao_mensal)
+
+    assert len(com_aporte) == pytest.approx(PRAZO - parcelas_eliminadas, abs=1)

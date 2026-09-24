@@ -18,6 +18,7 @@ que o comparador simule cenários hipotéticos sem persistir nada.
 
 from __future__ import annotations
 
+import math
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import date
@@ -181,6 +182,25 @@ class Calculadora(ABC):
             Parcela de amortização do principal.
         """
 
+    @abstractmethod
+    def _meses_para_quitar(self, saldo: float, taxa: float, valor_travado: float) -> int:
+        """
+        Estima em quantos meses o saldo se esgota mantendo a grandeza congelada.
+
+        Usado depois de uma amortização do tipo PRAZO para encurtar o prazo
+        efetivo do contrato. Sem isso, uma amortização PARCELA lançada mais
+        tarde re-espalharia o saldo pelo prazo *original*, desfazendo em
+        silêncio o encurtamento que a PRAZO havia produzido.
+
+        Argumentos:
+            saldo: saldo devedor após o aporte.
+            taxa: taxa de juros mensal em decimal.
+            valor_travado: valor devolvido por `_valor_a_travar`.
+
+        Retorna:
+            Quantidade de meses, arredondada para cima.
+        """
+
     def calcular_parcelas(
         self,
         valor_financiado: float,
@@ -301,6 +321,14 @@ class Calculadora(ABC):
                 if extra.tipo == 'PRAZO':
                     # Congela a grandeza que o sistema mantém fixa; o prazo é que cede.
                     valor_travado = self._valor_a_travar(amortizacao, valor_parcela)
+
+                    # O encurtamento precisa ficar registrado no prazo efetivo.
+                    # `numero` já aponta para o próximo mês, então os meses já
+                    # emitidos são `numero - 1`. Se mais tarde vier uma PARCELA,
+                    # ela redistribui o saldo sobre este prazo encurtado — e não
+                    # sobre o original, o que anularia o efeito desta.
+                    meses = self._meses_para_quitar(saldo, taxa, valor_travado)
+                    prazo = min(prazo, (numero - 1) + meses)
                 else:
                     # Tipo PARCELA: volta a recalcular o pagamento a cada mês.
                     valor_travado = None
@@ -332,6 +360,12 @@ class CalculadoraSac(Calculadora):
     def _amortizacao_travada(self, valor_travado: float, juros: float) -> float:
         return valor_travado
 
+    def _meses_para_quitar(self, saldo: float, taxa: float, valor_travado: float) -> int:
+        # Com a amortização de principal fixa, o saldo cai linearmente.
+        if valor_travado <= 0:
+            return 0
+        return max(1, math.ceil(saldo / valor_travado - 1e-9))
+
 
 class CalculadoraPrice(Calculadora):
     """
@@ -362,6 +396,21 @@ class CalculadoraPrice(Calculadora):
 
     def _amortizacao_travada(self, valor_travado: float, juros: float) -> float:
         return valor_travado - juros
+
+    def _meses_para_quitar(self, saldo: float, taxa: float, valor_travado: float) -> int:
+        # Inversão da fórmula do PMT para o número de períodos:
+        #   n = ln(PMT / (PMT − S·i)) / ln(1 + i)
+        if taxa <= 0:
+            return max(1, math.ceil(saldo / valor_travado - 1e-9)) if valor_travado > 0 else 0
+
+        juros_do_saldo = saldo * taxa
+        if valor_travado <= juros_do_saldo:
+            # O pagamento não cobre nem os juros: o saldo nunca se esgotaria.
+            # Devolve um valor grande para que o `min` no chamador não encurte.
+            return 10 ** 6
+
+        n = math.log(valor_travado / (valor_travado - juros_do_saldo)) / math.log(1 + taxa)
+        return max(1, math.ceil(n - 1e-9))
 
 
 #: Modelos disponíveis, na ordem em que aparecem na interface.

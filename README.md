@@ -34,7 +34,7 @@ Esta API ocupa a caixa do meio: recebe requisições da interface, persiste em S
 - [Flasgger](https://github.com/flasgger/flasgger) — documentação OpenAPI em `/apidocs`
 - [Requests](https://requests.readthedocs.io/) — cliente HTTP do Banco Central
 - [python-dateutil](https://dateutil.readthedocs.io/) — aritmética de competências
-- [pytest](https://docs.pytest.org/) — 79 testes automatizados
+- [pytest](https://docs.pytest.org/) — 82 testes automatizados
 
 ---
 
@@ -61,6 +61,8 @@ software-architecture-mvp-api/
 │   ├── cache_indicadores.py      # Cache local com TTL e fallback
 │   ├── cronograma.py             # Regravação das parcelas
 │   └── validacao.py              # Validadores compartilhados pelas rotas
+├── scripts/
+│   └── demo_rotas.sh             # Percorre as 20 rotas com saída legível
 ├── testes/
 │   ├── test_calculadora.py       # Cronogramas SAC e PRICE
 │   ├── test_comparador.py        # Regra financeira e faixas de IR
@@ -305,7 +307,7 @@ pip install -r requirements-dev.txt
 python -m pytest testes/ -v
 ```
 
-São 79 testes, organizados em três arquivos:
+São 82 testes, organizados em três arquivos:
 
 - **`test_calculadora.py`** — identidades contábeis dos cronogramas: a soma das amortizações fecha com o valor financiado, o saldo zera na última parcela, cada parcela é exatamente juros mais amortização.
 - **`test_comparador.py`** — regra financeira: faixas do IR por dias corridos, ausência de dupla contagem do principal, e existência de um único ponto de indiferença conforme a taxa sobe.
@@ -332,6 +334,20 @@ A formulação usada aqui coloca as duas estratégias no mesmo ponto de partida 
 Alíquotas do IR sobre renda fixa, por **dias corridos**: 22,5% até 180, 20% até 360, 17,5% até 720, 15% acima.
 
 Diferenças abaixo de 1% do aporte são reportadas como empate técnico.
+
+---
+
+## Demonstração das 20 rotas
+
+Com a API no ar, o script percorre todas as rotas em sequência, cria um contrato descartável e o remove no fim:
+
+```bash
+./scripts/demo_rotas.sh                      # API em http://localhost:5001
+BASE=http://localhost:5000 ./scripts/demo_rotas.sh
+PAUSA=1 ./scripts/demo_rotas.sh              # pausa entre os grupos, para narrar
+```
+
+Cada linha traz o método, a rota, o código HTTP e um resumo da resposta. Leva pouco mais de um segundo.
 
 ---
 
