@@ -38,12 +38,20 @@ TIMEOUT = float(os.getenv('BCB_TIMEOUT', '10'))
 #: periodicidade indica a unidade em que o BCB devolve o valor:
 #:   'mensal' → percentual já referente ao mês
 #:   'anual'  → percentual ao ano, base 252 dias úteis
+#:
+#: mes_corrente_parcial marca as séries em que o ponto do mês corrente é um
+#: acumulado incompleto. A 4390 publica o CDI "acumulado no mês" dia a dia: no
+#: dia 5 o valor de setembro é o de cinco dias úteis, não o do mês. Usá-lo como
+#: taxa mensal subestima o rendimento do investimento no começo de cada mês e
+#: faz o veredito da simulação oscilar conforme o dia do calendário. Para essas
+#: séries o mês corrente é descartado e vale o último mês fechado.
 SERIES = {
     'CDI': {
         'codigo': 4390,
         'descricao': 'CDI acumulado no mês',
         'periodicidade': 'mensal',
         'unidade': '% a.m.',
+        'mes_corrente_parcial': True,
     },
     'SELIC': {
         'codigo': 4189,
@@ -173,6 +181,70 @@ def para_taxa_mensal(valor: float, periodicidade: str) -> float:
     return valor
 
 
+def competencia_corrente() -> str:
+    """Competência do mês atual, 'YYYY-MM'. Isolada para os testes poderem fixá-la."""
+    return datetime.now().strftime('%Y-%m')
+
+
+def descarta_mes_parcial(nome: str, historico: list[dict]) -> list[dict]:
+    """
+    Remove o ponto do mês corrente das séries que o publicam incompleto.
+
+    Argumentos:
+        nome: 'CDI', 'SELIC' ou 'IPCA'.
+        historico: observações em ordem cronológica.
+
+    Retorna:
+        O histórico sem o mês corrente, se a série for de acumulado parcial;
+        o próprio histórico, caso contrário.
+    """
+    serie = SERIES.get(nome.upper(), {})
+    if not serie.get('mes_corrente_parcial') or not historico:
+        return historico
+
+    corrente = competencia_corrente()
+    return [o for o in historico if o['data_referencia'] != corrente]
+
+
+def monta_indicador(nome: str, historico: list[dict]) -> dict:
+    """
+    Monta o dicionário de um indicador a partir do histórico já tratado.
+
+    Compartilhada entre a leitura do BCB e a do cache, para que as duas
+    produzam exatamente o mesmo formato.
+
+    Argumentos:
+        nome: 'CDI', 'SELIC' ou 'IPCA'.
+        historico: observações em ordem cronológica, sem o mês parcial.
+
+    Retorna:
+        Dicionário com o valor mais recente, a taxa mensal equivalente,
+        a média do período e o histórico.
+
+    Lança:
+        ErroBCB: se o histórico estiver vazio.
+    """
+    if not historico:
+        raise ErroBCB(f"Sem observações completas para a série {nome}.")
+
+    serie = SERIES[nome]
+    atual = historico[-1]
+    valores = [o['valor'] for o in historico]
+
+    return {
+        'nome': nome,
+        'codigo_serie': serie['codigo'],
+        'descricao': serie['descricao'],
+        'unidade': serie['unidade'],
+        'periodicidade': serie['periodicidade'],
+        'data_referencia': atual['data_referencia'],
+        'valor': round(atual['valor'], 8),
+        'taxa_mensal': round(para_taxa_mensal(atual['valor'], serie['periodicidade']), 8),
+        'media_periodo': round(sum(valores) / len(valores), 8),
+        'historico': historico,
+    }
+
+
 def busca_indicador(nome: str, ultimos: int = 12) -> dict:
     """
     Busca uma série do catálogo pelo nome e devolve o valor corrente já tratado.
@@ -193,20 +265,10 @@ def busca_indicador(nome: str, ultimos: int = 12) -> dict:
         raise ErroBCB(f"Indicador desconhecido: {nome!r}. Disponíveis: {list(SERIES)}")
 
     serie = SERIES[nome]
-    historico = busca_serie(serie['codigo'], ultimos)
-    atual = historico[-1]
 
-    valores = [o['valor'] for o in historico]
+    # Uma observação a mais para compensar o mês parcial que será descartado.
+    extra = 1 if serie.get('mes_corrente_parcial') else 0
+    historico = busca_serie(serie['codigo'], ultimos + extra)
+    historico = descarta_mes_parcial(nome, historico)[-ultimos:]
 
-    return {
-        'nome': nome,
-        'codigo_serie': serie['codigo'],
-        'descricao': serie['descricao'],
-        'unidade': serie['unidade'],
-        'periodicidade': serie['periodicidade'],
-        'data_referencia': atual['data_referencia'],
-        'valor': round(atual['valor'], 8),
-        'taxa_mensal': round(para_taxa_mensal(atual['valor'], serie['periodicidade']), 8),
-        'media_periodo': round(sum(valores) / len(valores), 8),
-        'historico': historico,
-    }
+    return monta_indicador(nome, historico)

@@ -20,7 +20,13 @@ import os
 from datetime import datetime, timedelta, timezone
 
 import banco_de_dados as bd
-from servicos.cliente_bcb import SERIES, ErroBCB, busca_indicador, para_taxa_mensal
+from servicos.cliente_bcb import (
+    SERIES,
+    ErroBCB,
+    busca_indicador,
+    descarta_mes_parcial,
+    monta_indicador,
+)
 
 #: Horas que um registro do cache é considerado fresco.
 CACHE_TTL_HORAS = float(os.getenv('CACHE_TTL_HORAS', '6'))
@@ -72,17 +78,22 @@ def grava_indicador(conn, indicador: dict) -> None:
         })
 
 
-def le_do_cache(conn, nome: str) -> dict | None:
+def le_do_cache(conn, nome: str, ultimos: int | None = None) -> dict | None:
     """
     Reconstrói um indicador a partir do cache local.
+
+    Aplica ao cache os mesmos tratamentos da leitura direta do BCB: descarta o
+    mês corrente das séries de acumulado parcial — um ponto parcial gravado em
+    dias anteriores continua no banco — e limita o histórico a `ultimos`.
 
     Argumentos:
         conn: conexão ativa com o banco de dados.
         nome: 'CDI', 'SELIC' ou 'IPCA'.
+        ultimos: quantas observações devolver; None devolve todas.
 
     Retorna:
         Dicionário no mesmo formato de `busca_indicador`, acrescido de
-        'origem' e 'atualizado_em', ou None se não houver nada no cache.
+        'origem' e 'atualizado_em', ou None se não houver nada útil no cache.
     """
     nome = nome.upper()
     if nome not in SERIES:
@@ -93,31 +104,23 @@ def le_do_cache(conn, nome: str) -> dict | None:
         coluna='nome_indicador', valor=nome, ordem='data_referencia',
     )
 
-    if not registros:
+    historico = descarta_mes_parcial(nome, [
+        {'data_referencia': r['data_referencia'], 'valor': r['valor'],
+         'atualizado_em': r['atualizado_em']}
+        for r in registros
+    ])
+    if ultimos:
+        historico = historico[-ultimos:]
+
+    if not historico:
         return None
 
-    serie = SERIES[nome]
-    historico = [
-        {'data_referencia': r['data_referencia'], 'valor': r['valor']}
-        for r in registros
-    ]
-    atual = historico[-1]
-    valores = [o['valor'] for o in historico]
+    atualizado_em = max(o.pop('atualizado_em') for o in historico)
 
-    return {
-        'nome': nome,
-        'codigo_serie': serie['codigo'],
-        'descricao': serie['descricao'],
-        'unidade': serie['unidade'],
-        'periodicidade': serie['periodicidade'],
-        'data_referencia': atual['data_referencia'],
-        'valor': round(atual['valor'], 8),
-        'taxa_mensal': round(para_taxa_mensal(atual['valor'], serie['periodicidade']), 8),
-        'media_periodo': round(sum(valores) / len(valores), 8),
-        'historico': historico,
-        'origem': 'cache',
-        'atualizado_em': registros[-1]['atualizado_em'],
-    }
+    indicador = monta_indicador(nome, historico)
+    indicador['origem'] = 'cache'
+    indicador['atualizado_em'] = atualizado_em
+    return indicador
 
 
 def obtem_indicador(conn, nome: str, forcar: bool = False, ultimos: int = 12) -> dict:
@@ -148,14 +151,18 @@ def obtem_indicador(conn, nome: str, forcar: bool = False, ultimos: int = 12) ->
         ErroBCB: apenas quando o BCB falha E não há nada no cache.
     """
     if not forcar:
-        cacheado = le_do_cache(conn, nome)
-        if cacheado and _esta_fresco(cacheado['atualizado_em']):
+        cacheado = le_do_cache(conn, nome, ultimos)
+        # O cache só serve se estiver fresco E tiver observações suficientes;
+        # pedir 24 meses com 12 guardados tem de ir ao BCB.
+        if (cacheado
+                and _esta_fresco(cacheado['atualizado_em'])
+                and len(cacheado['historico']) >= ultimos):
             return cacheado
 
     try:
         indicador = busca_indicador(nome, ultimos)
     except ErroBCB:
-        cacheado = le_do_cache(conn, nome)
+        cacheado = le_do_cache(conn, nome, ultimos)
         if cacheado:
             cacheado['origem'] = 'cache_vencido'
             return cacheado

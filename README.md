@@ -34,7 +34,7 @@ Esta API ocupa a caixa do meio: recebe requisições da interface, persiste em S
 - [Flasgger](https://github.com/flasgger/flasgger) — documentação OpenAPI em `/apidocs`
 - [Requests](https://requests.readthedocs.io/) — cliente HTTP do Banco Central
 - [python-dateutil](https://dateutil.readthedocs.io/) — aritmética de competências
-- [pytest](https://docs.pytest.org/) — 82 testes automatizados
+- [pytest](https://docs.pytest.org/) — 84 testes automatizados
 
 ---
 
@@ -229,6 +229,8 @@ E normaliza as unidades. A Selic vem anualizada; o CDI e o IPCA, mensais:
 taxa_mensal = (1 + taxa_anual) ** (1/12) - 1   # 15% a.a. → 1,1715% a.m.
 ```
 
+**Mês corrente do CDI.** A série 4390 publica o CDI *acumulado no mês* dia a dia, então o ponto do mês corrente é parcial — no dia 5 vale só cinco dias úteis. A API descarta esse ponto e usa o último mês fechado; do contrário, a simulação subestimaria o investimento no começo de cada mês e o veredito mudaria conforme o dia do calendário.
+
 O módulo `servicos/cache_indicadores.py` guarda as séries no SQLite com TTL configurável. A ordem de tentativa é: cache fresco → BCB → cache vencido. Toda resposta carrega o campo `origem`:
 
 | `origem` | Significado | A interface alerta? |
@@ -307,7 +309,7 @@ pip install -r requirements-dev.txt
 python -m pytest testes/ -v
 ```
 
-São 82 testes, organizados em três arquivos:
+São 84 testes, organizados em três arquivos:
 
 - **`test_calculadora.py`** — identidades contábeis dos cronogramas: a soma das amortizações fecha com o valor financiado, o saldo zera na última parcela, cada parcela é exatamente juros mais amortização.
 - **`test_comparador.py`** — regra financeira: faixas do IR por dias corridos, ausência de dupla contagem do principal, e existência de um único ponto de indiferença conforme a taxa sobe.

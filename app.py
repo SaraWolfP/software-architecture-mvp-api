@@ -23,7 +23,7 @@ from servicos.cliente_bcb import ErroBCB, busca_serie
 
 #: Metadados exibidos na página do Swagger em /apidocs.
 CONFIG_SWAGGER = {
-    'title': 'Simulador de Financiamento Imobiliário — API',
+    'title': 'Amortiza ou Investe? — API',
     'uiversion': 3,
     'description': (
         'API REST que calcula cronogramas de financiamento pelos sistemas SAC e '

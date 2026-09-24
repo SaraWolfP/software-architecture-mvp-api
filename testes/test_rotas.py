@@ -511,3 +511,58 @@ def test_bcb_fora_do_ar_marca_o_cache_como_vencido(cliente, monkeypatch):
     assert corpo['origem'] == 'cache_vencido'
     # Mesmo degradada, a resposta continua útil: os valores seguem lá.
     assert all(i.get('valor') is not None for i in corpo['indicadores'])
+
+
+def test_cdi_descarta_o_mes_corrente_parcial(cliente, monkeypatch):
+    """
+    A série 4390 é o CDI acumulado no mês: o ponto do mês corrente é parcial.
+
+    Usá-lo como taxa mensal subestima o investimento no começo de cada mês — no
+    dia 5, o "CDI de setembro" é o de cinco dias úteis. O indicador precisa
+    usar o último mês fechado.
+    """
+    import banco_de_dados as bd
+    from servicos import cliente_bcb
+
+    # O fixture da sessão grava meses fictícios até dezembro no cache — meses
+    # "futuros" que o BCB real nunca devolveria. Este teste precisa do cache
+    # limpo para enxergar só a série que ele mesmo define.
+    conn = bd.conecta_db()
+    conn.execute('DELETE FROM IndicadoresCache')
+    conn.commit()
+    conn.close()
+
+    monkeypatch.setattr(cliente_bcb, 'competencia_corrente', lambda: '2026-09')
+
+    def serie_com_mes_parcial(codigo, ultimos=12):
+        # agosto fechado a 1,09%; setembro parcial, ainda em 0,41%
+        return [
+            {'data_referencia': '2026-07', 'valor': 0.0122},
+            {'data_referencia': '2026-08', 'valor': 0.0109},
+            {'data_referencia': '2026-09', 'valor': 0.0041},
+        ]
+
+    monkeypatch.setattr(cliente_bcb, 'busca_serie', serie_com_mes_parcial)
+
+    corpo = cliente.post('/indicadores/atualizar')
+    assert corpo.status_code == 200
+
+    cdi = cliente.get('/indicadores/CDI/historico?ultimos=2').get_json()
+
+    assert cdi['data_referencia'] == '2026-08'
+    assert cdi['taxa_mensal'] == pytest.approx(0.0109)
+    assert all(o['data_referencia'] != '2026-09' for o in cdi['historico'])
+
+
+def test_historico_respeita_o_parametro_ultimos(cliente):
+    """
+    Pedir seis meses tem que devolver seis, venha a resposta do BCB ou do cache.
+
+    Antes, quando havia cache fresco, o parâmetro era ignorado e a rota
+    devolvia tudo o que estivesse guardado.
+    """
+    cliente.post('/indicadores/atualizar')  # garante o cache populado
+
+    for ultimos in (3, 6):
+        corpo = cliente.get(f'/indicadores/IPCA/historico?ultimos={ultimos}').get_json()
+        assert len(corpo['historico']) == ultimos

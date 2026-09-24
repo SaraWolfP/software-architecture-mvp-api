@@ -70,6 +70,22 @@ chamada() {
   if [ -n "$resumo" ] && [ -n "$body" ]; then
     texto=$(printf '%s' "$body" | python3 -c "
 import json, sys
+
+def brl(v):   # 602000.0 -> 'R\$ 602.000,00'
+    return 'R\$ ' + format(v, ',.2f').replace(',', '_').replace('.', ',').replace('_', '.')
+
+def pct(v):   # 0.0109 -> '1,09%'
+    return format(v * 100, '.2f').replace('.', ',') + '%'
+
+def pl(n, um, varios):   # pl(1, 'simulação', 'simulações') -> '1 simulação'
+    return str(n) + ' ' + (um if n == 1 else varios)
+
+def fonte(o):
+    return {'bcb': 'lido agora do Banco Central',
+            'cache': 'Banco Central, em cache',
+            'misto': 'Banco Central, parte em cache',
+            'cache_vencido': 'cache vencido: BCB fora do ar'}.get(o, o)
+
 try:
     d = json.load(sys.stdin)
     print($resumo)
@@ -77,7 +93,7 @@ except Exception:
     pass" 2>/dev/null)
   fi
 
-  printf '  %s%2d%s  %s%-6s%s  %-48s  %s%s%s  %s%s%s\n' \
+  printf '  %s%2d%s  %s%-6s%s  %-40s  %s%s%s  %s%s%s\n' \
     "$CINZA" "$CONTADOR" "$FIM" \
     "$(cor_metodo "$metodo")" "$metodo" "$FIM" \
     "$rota" \
@@ -110,7 +126,7 @@ chamada GET /health        '' "'api=' + d['api'] + ' · bcb=' + d['bcb']"
 # ═══════════════════════════════════════════════════════════════════════════
 grupo "Financiamentos — GET, POST, PUT, DELETE"
 chamada POST /financiamento/ \
-  "{\"nome\":\"$NOME\",\"valor_imovel\":500000,\"entrada\":100000,\"taxa_juros\":1.00,\"prazo_meses\":360,\"data_inicio\":\"2026-01\",\"modelo\":\"SAC\"}" \
+  "{\"nome\":\"$NOME\",\"valor_imovel\":500000,\"entrada\":100000,\"taxa_juros\":1.20,\"prazo_meses\":360,\"data_inicio\":\"2026-01\",\"modelo\":\"SAC\"}" \
   "'id=' + str(d['id']) + ' · ' + str(d['parcelas_geradas']) + ' parcelas geradas'"
 FIN=$(extrai id)
 
@@ -119,18 +135,18 @@ if [ -z "$FIN" ]; then
   exit 1
 fi
 
-chamada GET "/financiamento/?ordenar_por=valor_imovel&ordem=desc&por_pagina=5" '' \
-  "str(d['paginacao']['total']) + ' contrato(s), página ' + str(d['paginacao']['pagina']) + ' de ' + str(d['paginacao']['total_paginas'])"
+chamada GET "/financiamento/?ordem=desc&por_pagina=5" '' \
+  "pl(d['paginacao']['total'], 'contrato', 'contratos') + ' · página ' + str(d['paginacao']['pagina']) + ' de ' + str(d['paginacao']['total_paginas'])"
 chamada GET "/financiamento/$FIN" '' "d['nome'] + ' · ' + d['modelo'] + ' · ' + str(d['prazo_meses']) + ' meses'"
 chamada PUT "/financiamento/$FIN" \
-  "{\"nome\":\"$NOME\",\"valor_imovel\":520000,\"entrada\":120000,\"taxa_juros\":1.00,\"prazo_meses\":300,\"data_inicio\":\"2026-01\",\"modelo\":\"SAC\"}" \
+  "{\"nome\":\"$NOME\",\"valor_imovel\":520000,\"entrada\":120000,\"taxa_juros\":1.20,\"prazo_meses\":300,\"data_inicio\":\"2026-01\",\"modelo\":\"SAC\"}" \
   "'prazo 360 → 300, ' + str(d['parcelas_geradas']) + ' parcelas recalculadas'"
 
 # ═══════════════════════════════════════════════════════════════════════════
 grupo "Parcelas — somente leitura"
 chamada GET "/financiamento/$FIN/parcelas?ano=2027" '' "str(len(d)) + ' parcelas em 2027'"
 chamada GET "/financiamento/$FIN/parcelas/resumo" '' \
-  "'juros totais R\$ ' + format(d['total_juros'], ',.2f')"
+  "'juros totais de ' + brl(d['total_juros'])"
 
 # ═══════════════════════════════════════════════════════════════════════════
 grupo "Amortizações extraordinárias — GET, POST, PUT, DELETE"
@@ -138,7 +154,7 @@ chamada POST "/financiamento/$FIN/amortizacoes" \
   '{"valor_amortizado":50000,"data_amortizacao":"2027-06","tipo":"PARCELA"}' \
   "'id=' + str(d['id']) + ' · cronograma com ' + str(d['parcelas_geradas']) + ' parcelas'"
 AMORT=$(extrai id)
-chamada GET "/financiamento/$FIN/amortizacoes" '' "str(len(d)) + ' amortização(ões)'"
+chamada GET "/financiamento/$FIN/amortizacoes" '' "pl(len(d), 'amortização', 'amortizações') + ' no contrato'"
 chamada PUT "/financiamento/$FIN/amortizacoes/$AMORT" \
   '{"valor_amortizado":50000,"data_amortizacao":"2027-06","tipo":"PRAZO"}' \
   "'agora tipo PRAZO → ' + str(d['parcelas_geradas']) + ' parcelas (encurtou)'"
@@ -146,9 +162,9 @@ chamada PUT "/financiamento/$FIN/amortizacoes/$AMORT" \
 # ═══════════════════════════════════════════════════════════════════════════
 grupo "Indicadores — componente externa (Banco Central)"
 chamada GET /indicadores/ '' \
-  "' · '.join(i['nome'] + ' ' + format(i['valor']*100, '.2f') + '%' for i in d['indicadores'] if 'valor' in i) + '  [origem: ' + d['origem'] + ']'"
+  "' · '.join(i['nome'] + ' ' + pct(i['valor']) for i in d['indicadores'] if 'valor' in i) + '  (' + fonte(d['origem']) + ')'"
 chamada GET "/indicadores/CDI/historico?ultimos=6" '' \
-  "str(len(d['historico'])) + ' meses · último ' + d['data_referencia']"
+  "pl(len(d['historico']), 'mês', 'meses') + ' · último fechado: ' + d['data_referencia']"
 chamada POST /indicadores/atualizar '' \
   "'atualizados: ' + ', '.join(d.get('atualizados', [])) if 'atualizados' in d else d.get('erro', '')[:60]"
 
@@ -156,12 +172,12 @@ chamada POST /indicadores/atualizar '' \
 grupo "Simulações — amortizar vs. investir — GET, POST, PUT, DELETE"
 chamada POST "/financiamento/$FIN/simulacoes" \
   '{"valor_aporte":50000,"data_aporte":"2028-01","indicador":"CDI","percentual_indicador":100}' \
-  "d['veredito'] + ' · diferença R\$ ' + format(d['diferenca'], ',.2f')"
+  "'a 100% do CDI: ' + d['veredito'] + ' · diferença de ' + brl(d['diferenca'])"
 SIM=$(extrai id)
-chamada GET "/financiamento/$FIN/simulacoes" '' "str(len(d)) + ' simulação(ões) salva(s)'"
+chamada GET "/financiamento/$FIN/simulacoes" '' "pl(len(d), 'simulação salva', 'simulações salvas')"
 chamada PUT "/financiamento/$FIN/simulacoes/$SIM" \
   '{"valor_aporte":50000,"data_aporte":"2028-01","indicador":"CDI","percentual_indicador":130}' \
-  "'a 130% do CDI: ' + d['veredito']"
+  "'a 130% do CDI: ' + d['veredito'] + ' · diferença de ' + brl(d['diferenca'])"
 chamada DELETE "/financiamento/$FIN/simulacoes/$SIM" '' "d['mensagem']"
 
 # ═══════════════════════════════════════════════════════════════════════════
